@@ -1,344 +1,240 @@
-## Part 1 – Manual Deployment
+# DevOps Challenge 1 – Từ triển khai thủ công đến tự động
 
-### Manual Deployment Steps and Automation Opportunities
+## 1. Tổng quan
 
-The application was manually deployed on Ubuntu using the following steps:
+Bài tập thực hành triển khai một ứng dụng Flask trên **Ubuntu chạy trong VMware Workstation**. Mục tiêu là đi từ việc chạy ứng dụng thủ công đến triển khai có thể lặp lại bằng Git, systemd, Nginx, biến môi trường và Bash script.
 
-| Manual Step | Can Be Automated? |
-|---|---|
-| Clone or update the source code using Git | Yes |
-| Create a Python virtual environment (venv) | Yes |
-| Install dependencies using pip | Yes |
-| Start or restart the application | Yes |
-| Verify the application using curl | Yes |
-| Investigate deployment failures | Requires human intervention |
+- **Repository:** https://github.com/trvannhan/devops-challenge-1
+- **Tên hiển thị ứng dụng:** DevOps Challenge 1 - Team NHM
+- **Thư mục phát triển:** `/home/vannhan/devops-challenge-1`
+- **Thư mục triển khai:** `/opt/devops-app`
+- **Địa chỉ truy cập trên Ubuntu:** `http://localhost`
+- **Health check:** `http://localhost/health`
 
-### Reflection
+## 2. Kiến trúc hệ thống
 
-Manual deployment requires developers to execute multiple commands individually. This process is time-consuming and can lead to human errors.
+![Sơ đồ kiến trúc DevOps](docs/architecture.svg)
 
-By using a Bash deployment script, tasks such as updating source code, installing dependencies, restarting services, and performing health checks can be automated.
+**Luồng truy cập:** Trình duyệt → Nginx (cổng 80) → Flask (`127.0.0.1:5000`).
 
-This makes deployment faster, more consistent, and easier to repeat.
-## Part 2 – Git Workflow
+**Luồng triển khai:** GitHub → `git pull` tại `/opt/devops-app` → cài thư viện → restart systemd → kiểm tra `/health`.
 
-### Objective
-Use Git branches to manage source code changes without directly modifying the main branch.
+- **Nginx** nhận yêu cầu HTTP và chuyển tiếp đến Flask.
+- **Flask** xử lý hai route: `/` và `/health`.
+- **systemd** quản lý tiến trình Flask, hỗ trợ tự chạy khi bật Ubuntu và tự khởi động lại theo cấu hình.
+- **EnvironmentFile** tại `/etc/devops-app.env` cung cấp các biến cấu hình cho service.
+- **`scripts/deploy.sh`** tự động cập nhật, cài dependencies, restart và health check.
 
-### Steps Performed
+## 3. Cấu trúc repository
 
-1. Created a new branch named `feature/teamNHM`.
-2. Modified `app.py` to display "DevOps Challenge 1 - Team NHM".
-3. Used `git add app.py` to stage the changes.
-4. Created a commit using `git commit`.
-5. Switched back to the `main` branch.
-6. Merged `feature/teamNHM` into `main`.
-7. Pushed the updated `main` branch to GitHub.
-
-### Git Workflow Explanation
-
-- **Working Directory:** Where developers modify source code.
-- **Staging Area:** Where selected changes are prepared using `git add`.
-- **Commit:** Saves a snapshot of staged changes to the local Git repository.
-- **Remote Repository:** GitHub stores the shared version after `git push`.
-
-### Result
-
-The feature branch was successfully merged into `main`. The application homepage displays "DevOps Challenge 1 - Team NHM".
-## Part 3 – systemd Service
-
-### Objective
-
-Run the Flask application as a Linux service using systemd, so the application can run in the background without keeping a terminal open.
-
-### Service Configuration
-
-The application is deployed in `/opt/devops-app`.
-
-The systemd service file is stored at `systemd/devops-app.service`.
-
-The service configuration includes:
-
-- **User:** `vannhan`
-- **WorkingDirectory:** `/opt/devops-app`
-- **ExecStart:** `/opt/devops-app/venv/bin/python /opt/devops-app/app.py`
-- **Restart:** `always`
-- **RestartSec:** `3`
-
-### Service Management
-
-The following commands are used to manage the application:
-
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable devops-app
-sudo systemctl start devops-app
-sudo systemctl stop devops-app
-sudo systemctl restart devops-app
-sudo systemctl status devops-app
+```text
+devops-challenge-1/
+├── app.py
+├── requirements.txt
+├── .env.example
+├── .gitignore
+├── README.md
+├── scripts/
+│   └── deploy.sh
+├── nginx/
+│   └── devops-app.conf
+├── systemd/
+│   └── devops-app.service
+└── docs/
+    └── architecture.svg
 ```
 
-### Why is systemd better than running the application in a terminal?
+## 4. Part 1 – Triển khai thủ công
 
-Running the Flask application directly in a terminal requires manually starting and managing the process.
+Các bước đã thực hành:
 
-Using systemd provides several benefits:
+1. Clone mã nguồn từ GitHub vào Ubuntu.
+2. Tạo môi trường Python ảo (`venv`).
+3. Cài các thư viện từ `requirements.txt` bằng pip.
+4. Chạy Flask thủ công.
+5. Kiểm tra kết quả bằng `curl` và trình duyệt.
 
-- The application runs in the background.
-- It does not depend on keeping the terminal open.
-- It can start automatically when Ubuntu boots.
-- It can restart automatically if the application process stops.
-- We can manage the application using `systemctl`.
-- We can investigate application logs using `journalctl`.
+Ví dụ thao tác tại thư mục mã nguồn:
 
-### Verification
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python app.py
+```
 
-The systemd service was successfully started and returned `active (running)`.
-
-The application was tested using:
+Mở Terminal khác để kiểm tra:
 
 ```bash
 curl http://127.0.0.1:5000
 curl http://127.0.0.1:5000/health
 ```
 
-The homepage returned `DevOps Challenge 1 - Team NHM`, and the health endpoint returned `{"status":"ok"}`.
-## Part 4 – Nginx Reverse Proxy
+**Nhận xét:** Clone/update Git, tạo môi trường, cài thư viện, chạy ứng dụng và kiểm tra sức khỏe đều có thể tự động hóa. Việc xác định nguyên nhân khi triển khai lỗi vẫn thường cần người kiểm tra log và cấu hình.
 
-### Objective
+## 5. Part 2 – Git Workflow
 
-Configure Nginx as a reverse proxy so users can access the Flask application through port 80 instead of port 5000.
+Nhóm sử dụng nhánh `feature/teamNHM` để chỉnh sửa nội dung trang chủ mà không thay đổi trực tiếp `main`.
 
-### Architecture
+Quy trình: tạo branch → sửa `app.py` → `git add` → `git commit` → chuyển về `main` → merge → push GitHub.
 
-Browser → Nginx (Port 80) → Flask Application (127.0.0.1:5000)
+```bash
+git checkout -b feature/teamNHM
+# Sửa app.py rồi lưu
+git add app.py
+git commit -m "Add team NHM name to homepage"
+git checkout main
+git merge feature/teamNHM
+git push origin main
+```
 
-### Nginx Configuration
+Sau khi merge, trang chủ hiển thị `DevOps Challenge 1 - Team NHM`. Git giúp theo dõi phiên bản và tách phần phát triển chức năng khỏi nhánh chính.
 
-The Nginx configuration is stored in `nginx/devops-app.conf`.
+## 6. Part 3 – Chạy Flask bằng systemd
 
-- `listen 80`: Nginx listens for HTTP requests on port 80.
-- `server_name _`: Defines the server name used for this configuration.
-- `proxy_pass`: Forwards requests to the Flask application.
-- `proxy_set_header Host`: Passes the original Host header.
-- `proxy_set_header X-Real-IP`: Passes the client IP address.
+File cấu hình: `systemd/devops-app.service`.
 
-### Deployment Steps
+Các giá trị chính đang sử dụng:
 
-1. Created the Nginx configuration file.
-2. Copied the configuration to `/etc/nginx/sites-available/devops-app`.
-3. Enabled the configuration using a symbolic link in `/etc/nginx/sites-enabled/`.
-4. Disabled the default Nginx website.
-5. Tested the configuration using `sudo nginx -t`.
-6. Reloaded Nginx using `sudo systemctl reload nginx`.
+| Cấu hình | Giá trị |
+|---|---|
+| User | `vannhan` |
+| WorkingDirectory | `/opt/devops-app` |
+| ExecStart | `/opt/devops-app/venv/bin/python /opt/devops-app/app.py` |
+| EnvironmentFile | `/etc/devops-app.env` |
+| Restart | `always` |
+| RestartSec | `3` |
 
-### Verification
+Các lệnh quản lý:
 
-The following commands were used to verify the reverse proxy:
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable devops-app
+sudo systemctl start devops-app
+systemctl status devops-app --no-pager
+sudo systemctl restart devops-app
+journalctl -u devops-app -n 20 --no-pager
+```
 
-`curl http://localhost`
+**Kết quả:** Ứng dụng chạy dưới dạng service, không cần giữ Terminal chạy `python app.py` liên tục. Đã kiểm tra trạng thái `active` và endpoint Flask.
 
-Result: `DevOps Challenge 1 - Team NHM`
+## 7. Part 4 – Nginx Reverse Proxy
 
-`curl http://localhost/health`
+Cấu hình Nginx lưu trong `nginx/devops-app.conf`:
 
-Result: `{"status":"ok"}`
+- `listen 80`: nhận HTTP tại cổng 80.
+- `proxy_pass http://127.0.0.1:5000`: chuyển request sang Flask.
+- `proxy_set_header`: chuyển tiếp thông tin Host và IP khách.
 
-### Troubleshooting
+Các thao tác thiết lập trên Ubuntu:
 
-During configuration, Nginx initially displayed the default welcome page instead of forwarding requests to Flask.
+```bash
+sudo cp nginx/devops-app.conf /etc/nginx/sites-available/devops-app
+sudo ln -sfn /etc/nginx/sites-available/devops-app /etc/nginx/sites-enabled/devops-app
+sudo rm -f /etc/nginx/sites-enabled/default
+sudo nginx -t
+sudo systemctl reload nginx
+```
 
-We investigated the enabled site configurations and found that the default website was still active.
+Kiểm tra:
 
-We also encountered an Nginx configuration syntax error. After correcting the configuration and copying it to the correct location, `nginx -t` passed successfully.
+```bash
+curl http://localhost
+curl http://localhost/health
+```
 
-Finally, we reloaded Nginx and verified that both the homepage and health endpoint worked correctly.
-## Part 5 – Environment Configuration
+**Kết quả:** Có thể truy cập ứng dụng qua Nginx bằng `http://localhost` mà không cần nhập `:5000`. Trong quá trình cấu hình đã gặp trang Nginx mặc định và lỗi cú pháp; sau khi kiểm tra site được bật, sửa file cấu hình và reload Nginx, các request hoạt động bình thường.
 
-### Objective
+## 8. Part 5 – Cấu hình biến môi trường
 
-Separate application configuration from source code using environment variables.
+Ứng dụng đọc biến môi trường bằng `os.getenv()`. File `.env.example` chứa giá trị mẫu; file cấu hình thực dùng cho systemd nằm ngoài repository tại `/etc/devops-app.env`.
 
-### Environment Variables
-
-| Variable | Description | Example |
+| Biến | Ý nghĩa | Ví dụ |
 |---|---|---|
-| APP_NAME | Application name displayed on the homepage | DevOps Challenge 1 - Team NHM |
-| APP_ENV | Application environment | production |
-| APP_PORT | Port used by Flask | 5000 |
+| `APP_NAME` | Tên trên trang chủ | `DevOps Challenge 1 - Team NHM` |
+| `APP_ENV` | Môi trường chạy | `production` |
+| `APP_PORT` | Cổng Flask | `5000` |
 
-### Configuration
+Đã thử đổi `APP_NAME` thành `DevOps Challenge 1 - Environment Test`, restart service và xác nhận trang chủ thay đổi **không cần sửa `app.py`**. Sau đó khôi phục tên ban đầu.
 
-The application uses `os.getenv()` to read environment variables.
+**Lợi ích:** tách cấu hình theo môi trường, tránh phải sửa mã nguồn mỗi lần đổi thông số và hạn chế đưa cấu hình nhạy cảm lên Git.
 
-The `.env.example` file provides sample configuration values.
+## 9. Part 6 – Tự động hóa triển khai
 
-The actual environment configuration is stored at `/etc/devops-app.env` and is loaded by systemd using:
+Script: `scripts/deploy.sh`.
 
-`EnvironmentFile=/etc/devops-app.env`
+Script thực hiện đúng 5 công việc:
 
-### Verification
+1. Cập nhật mã nguồn: `git pull --ff-only origin main`.
+2. Kích hoạt `venv`, cài dependencies từ `requirements.txt`.
+3. Khởi động lại `devops-app`.
+4. Kiểm tra service bằng `systemctl is-active --quiet`.
+5. Kiểm tra `http://localhost/health`, thử tối đa 5 lần, nghỉ 2 giây giữa các lần thử.
 
-We changed `APP_NAME` to `DevOps Challenge 1 - Environment Test` without modifying `app.py`.
+Chạy script:
 
-After restarting the service with `sudo systemctl restart devops-app`, the homepage displayed the new application name.
+```bash
+/home/vannhan/devops-challenge-1/scripts/deploy.sh
+```
 
-This confirms that the application reads configuration from environment variables.
+Script dùng đường dẫn triển khai tuyệt đối `/opt/devops-app`, nên đã được thử chạy thành công khi Terminal đang đứng tại `/home/vannhan` và `/tmp`.
 
-### Why Separate Configuration from Source Code?
+Trong lần thử đầu tiên, health check gặp HTTP 502 do ứng dụng chưa sẵn sàng ngay sau restart. Sau khi bổ sung vòng lặp retry, script trả về `Deployment successful.`.
 
-Separating configuration makes the application easier to maintain and deploy across different environments.
+**Lưu ý:** Script phù hợp môi trường thực hành hiện tại, chưa có rollback khi triển khai thất bại.
 
-It allows configuration changes without modifying source code and helps prevent sensitive information from being committed to GitHub.
-## Part 6 – Deployment Automation
+## 10. Part 7 – Health Check
 
-### Objective
+Flask có route `GET /health` trả về:
 
-Automate the deployment process using a Bash script instead of running each deployment command manually.
+```json
+{"status":"ok"}
+```
 
-### Deployment Script
+Kiểm tra:
 
-The deployment script is stored at `scripts/deploy.sh`.
+```bash
+curl -i http://localhost/health
+```
 
-It automatically performs five steps:
+- Khi ứng dụng chạy: HTTP 200, nội dung `{"status":"ok"}`.
+- Khi chủ động dừng `devops-app`: Nginx trả HTTP 502.
+- Khi start lại service: kết quả trở về HTTP 200.
 
-1. **Update source:** Pull the latest source code from GitHub.
-2. **Install dependencies:** Install Python packages from `requirements.txt`.
-3. **Restart application:** Restart the `devops-app` systemd service.
-4. **Check service:** Verify that the service is active.
-5. **Health check:** Check `http://localhost/health` to confirm the application is working.
+`deploy.sh` chỉ thông báo thành công nếu endpoint đáp ứng. Nếu không vượt qua tất cả lần kiểm tra, script báo `Health check failed.` và kết thúc bằng mã lỗi. Đã quan sát trường hợp script báo thất bại do HTTP 502 ở lần chạy ban đầu; chưa thử riêng một kịch bản gây lỗi kéo dài hết cả 5 lần retry.
 
-### Execution
+## 11. Part 8 – Troubleshooting
 
-Run the deployment script:
+| Tình huống | Kiểm tra/chẩn đoán | Cách xử lý và kết quả |
+|---|---|---|
+| **A. 502 Bad Gateway** | Kiểm tra `systemctl status devops-app`, `journalctl -u devops-app` | Start lại Flask; `/health` trả HTTP 200 |
+| **B. Port 5000 chạy, port 80 lỗi** | `curl` cả hai cổng, `systemctl is-active nginx`, `sudo nginx -t` | Start Nginx; port 80 hoạt động lại |
+| **C. Không tự khởi động sau reboot** | Kiểm tra `systemctl is-enabled devops-app` | Thử disable rồi enable lại; xác nhận `enabled` và `active` (chưa mô phỏng reboot khi đang disabled) |
+| **D. Vẫn thấy phiên bản cũ** | So sánh `git log -1 --oneline` ở thư mục phát triển và triển khai | Chạy `deploy.sh`, xác nhận hai bản cùng commit và health check thành công (chưa giả lập sửa giao diện mà chưa deploy) |
+| **E. Script phụ thuộc thư mục chạy** | Chạy script từ `/tmp` | `deploy.sh` vẫn hoàn tất 5 bước vì dùng đường dẫn `/opt/devops-app` |
 
-`./scripts/deploy.sh`
+Lệnh thường dùng để điều tra lỗi:
 
-### Health Check Retry
+```bash
+systemctl status devops-app --no-pager
+journalctl -u devops-app -n 20 --no-pager
+systemctl is-active nginx
+sudo nginx -t
+curl -i http://127.0.0.1:5000/health
+curl -i http://localhost/health
+git -C /opt/devops-app log -1 --oneline
+```
 
-The script retries the health check up to five times if the application is not ready immediately after restarting.
+## 12. Tổng kết và hướng dẫn kiểm tra nhanh
 
-If the health check continues to fail, the script exits with an error instead of reporting a successful deployment.
+| Nội dung | Lệnh |
+|---|---|
+| Kiểm tra Flask service | `systemctl is-active devops-app` |
+| Kiểm tra Nginx | `systemctl is-active nginx` |
+| Trang chủ | `curl http://localhost` |
+| Health check | `curl http://localhost/health` |
+| Triển khai bản mới | `/home/vannhan/devops-challenge-1/scripts/deploy.sh` |
 
-### Directory Independence
+So với việc triển khai thủ công, script giảm thao tác lặp, thống nhất quy trình và giúp phát hiện lỗi sớm bằng health check. Việc xem log và khắc phục những nguyên nhân phức tạp vẫn cần người thực hiện.
 
-The deployment script uses an absolute application path (`/opt/devops-app`).
-
-We also tested the script from `/home/vannhan` using:
-
-`/home/vannhan/devops-challenge-1/scripts/deploy.sh`
-
-The deployment completed successfully.
-
-### Result
-
-The script successfully updated the source code, installed dependencies, restarted the service, verified the service status, and passed the health check.
-
-**Final output:** `Deployment successful.`
-
-### Benefits
-
-Automated deployment reduces repetitive manual work, improves consistency, and makes the deployment process easier to reproduce.
-## Part 7 – Health Check
-
-### Objective
-
-Verify that the application is healthy after deployment and detect failures.
-
-### Health Check Endpoint
-
-The Flask application provides a `/health` endpoint.
-
-When the application is running correctly, it returns:
-
-`{"status":"ok"}`
-
-### Verification
-
-The health check can be tested through Nginx using:
-
-`curl --fail http://localhost/health`
-
-**Successful test:**
-
-- HTTP status: 200 OK
-- Response: `{"status":"ok"}`
-
-**Failure test:**
-
-1. Stopped the application using `sudo systemctl stop devops-app`.
-2. Executed `curl --fail http://localhost/health`.
-3. Received HTTP 502 Bad Gateway.
-4. Restarted the application using `sudo systemctl start devops-app`.
-5. Verified that the health endpoint returned `{"status":"ok"}` again.
-
-### Integration with deploy.sh
-
-The deployment script performs a health check after restarting the application.
-
-If the application is not ready, the script retries the request up to five times.
-
-If the health check fails after all attempts, the script exits with a non-zero status and reports deployment failure.
-
-This prevents the script from reporting success when the application is not healthy.
-## Part 8 – Troubleshooting Challenge
-
-### Incident A – 502 Bad Gateway
-
-**Problem:** Nginx could not connect to the Flask application.
-
-**Investigation:** Checked the application service using `systemctl status devops-app` and reviewed logs using `journalctl -u devops-app`.
-
-**Solution:** Started the Flask application service using `sudo systemctl start devops-app`.
-
-**Verification:** The health endpoint returned HTTP 200 and `{"status":"ok"}`.
-
-### Incident B – Port 5000 Works but Port 80 Fails
-
-**Problem:** Flask worked on port 5000, but Nginx was stopped.
-
-**Investigation:** Tested both ports using `curl`, checked Nginx status using `systemctl`, and validated configuration using `nginx -t`.
-
-**Solution:** Started Nginx using `sudo systemctl start nginx`.
-
-**Verification:** Port 80 returned HTTP 200 and the health endpoint worked.
-
-### Incident C – Application Does Not Start After Reboot
-
-**Problem:** The application service was configured not to start automatically.
-
-**Investigation:** Checked the service using `systemctl is-enabled devops-app`.
-
-**Solution:** Enabled automatic startup using `sudo systemctl enable devops-app`.
-
-**Verification:** The service reported `enabled` and `active`.
-
-### Incident D – Old Application Version Is Displayed
-
-**Problem:** The deployed source code may be older than the latest repository version.
-
-**Investigation:** Compared Git commits in the development and deployment directories using `git log`.
-
-**Solution:** Ran the deployment script to synchronize the latest source code and restart the application.
-
-**Verification:** Both repositories had the same latest commit and the deployment passed the health check.
-
-### Incident E – Deployment Script Depends on Working Directory
-
-**Problem:** A deployment script may fail when executed outside the project directory.
-
-**Investigation:** Tested `deploy.sh` from `/tmp`.
-
-**Solution:** Used the absolute application path `/opt/devops-app` in the deployment script.
-
-**Verification:** The script completed all five deployment stages and displayed `Deployment successful.`
-
-### Useful Troubleshooting Commands
-
-- `systemctl status devops-app` – Check Flask service status.
-- `journalctl -u devops-app -n 20` – View application logs.
-- `systemctl status nginx` – Check Nginx status.
-- `sudo nginx -t` – Validate Nginx configuration.
-- `curl -i http://localhost/health` – Test the health endpoint.
-- `git log --oneline -5` – Check recent commits.
-- `git status` – Check repository changes.
+> Ghi chú: Đường dẫn và tên user trong tài liệu là cấu hình của máy Ubuntu VMware đã thực hành. Khi triển khai trên máy khác, cần điều chỉnh cho phù hợp.
