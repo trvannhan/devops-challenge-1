@@ -239,3 +239,45 @@ The script successfully updated the source code, installed dependencies, restart
 ### Benefits
 
 Automated deployment reduces repetitive manual work, improves consistency, and makes the deployment process easier to reproduce.
+## Part 7 – Health Check
+
+### Objective
+
+Verify that the application is healthy after deployment and detect failures.
+
+### Health Check Endpoint
+
+The Flask application provides a `/health` endpoint.
+
+When the application is running correctly, it returns:
+
+`{"status":"ok"}`
+
+### Verification
+
+The health check can be tested through Nginx using:
+
+`curl --fail http://localhost/health`
+
+**Successful test:**
+
+- HTTP status: 200 OK
+- Response: `{"status":"ok"}`
+
+**Failure test:**
+
+1. Stopped the application using `sudo systemctl stop devops-app`.
+2. Executed `curl --fail http://localhost/health`.
+3. Received HTTP 502 Bad Gateway.
+4. Restarted the application using `sudo systemctl start devops-app`.
+5. Verified that the health endpoint returned `{"status":"ok"}` again.
+
+### Integration with deploy.sh
+
+The deployment script performs a health check after restarting the application.
+
+If the application is not ready, the script retries the request up to five times.
+
+If the health check fails after all attempts, the script exits with a non-zero status and reports deployment failure.
+
+This prevents the script from reporting success when the application is not healthy.
