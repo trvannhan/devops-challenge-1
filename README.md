@@ -103,3 +103,53 @@ curl http://127.0.0.1:5000/health
 ```
 
 The homepage returned `DevOps Challenge 1 - Team NHM`, and the health endpoint returned `{"status":"ok"}`.
+## Part 4 – Nginx Reverse Proxy
+
+### Objective
+
+Configure Nginx as a reverse proxy so users can access the Flask application through port 80 instead of port 5000.
+
+### Architecture
+
+Browser → Nginx (Port 80) → Flask Application (127.0.0.1:5000)
+
+### Nginx Configuration
+
+The Nginx configuration is stored in `nginx/devops-app.conf`.
+
+- `listen 80`: Nginx listens for HTTP requests on port 80.
+- `server_name _`: Defines the server name used for this configuration.
+- `proxy_pass`: Forwards requests to the Flask application.
+- `proxy_set_header Host`: Passes the original Host header.
+- `proxy_set_header X-Real-IP`: Passes the client IP address.
+
+### Deployment Steps
+
+1. Created the Nginx configuration file.
+2. Copied the configuration to `/etc/nginx/sites-available/devops-app`.
+3. Enabled the configuration using a symbolic link in `/etc/nginx/sites-enabled/`.
+4. Disabled the default Nginx website.
+5. Tested the configuration using `sudo nginx -t`.
+6. Reloaded Nginx using `sudo systemctl reload nginx`.
+
+### Verification
+
+The following commands were used to verify the reverse proxy:
+
+`curl http://localhost`
+
+Result: `DevOps Challenge 1 - Team NHM`
+
+`curl http://localhost/health`
+
+Result: `{"status":"ok"}`
+
+### Troubleshooting
+
+During configuration, Nginx initially displayed the default welcome page instead of forwarding requests to Flask.
+
+We investigated the enabled site configurations and found that the default website was still active.
+
+We also encountered an Nginx configuration syntax error. After correcting the configuration and copying it to the correct location, `nginx -t` passed successfully.
+
+Finally, we reloaded Nginx and verified that both the homepage and health endpoint worked correctly.
