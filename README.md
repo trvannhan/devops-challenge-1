@@ -45,3 +45,61 @@ Use Git branches to manage source code changes without directly modifying the ma
 ### Result
 
 The feature branch was successfully merged into `main`. The application homepage displays "DevOps Challenge 1 - Team NHM".
+## Part 3 – systemd Service
+
+### Objective
+
+Run the Flask application as a Linux service using systemd, so the application can run in the background without keeping a terminal open.
+
+### Service Configuration
+
+The application is deployed in `/opt/devops-app`.
+
+The systemd service file is stored at `systemd/devops-app.service`.
+
+The service configuration includes:
+
+- **User:** `vannhan`
+- **WorkingDirectory:** `/opt/devops-app`
+- **ExecStart:** `/opt/devops-app/venv/bin/python /opt/devops-app/app.py`
+- **Restart:** `always`
+- **RestartSec:** `3`
+
+### Service Management
+
+The following commands are used to manage the application:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable devops-app
+sudo systemctl start devops-app
+sudo systemctl stop devops-app
+sudo systemctl restart devops-app
+sudo systemctl status devops-app
+```
+
+### Why is systemd better than running the application in a terminal?
+
+Running the Flask application directly in a terminal requires manually starting and managing the process.
+
+Using systemd provides several benefits:
+
+- The application runs in the background.
+- It does not depend on keeping the terminal open.
+- It can start automatically when Ubuntu boots.
+- It can restart automatically if the application process stops.
+- We can manage the application using `systemctl`.
+- We can investigate application logs using `journalctl`.
+
+### Verification
+
+The systemd service was successfully started and returned `active (running)`.
+
+The application was tested using:
+
+```bash
+curl http://127.0.0.1:5000
+curl http://127.0.0.1:5000/health
+```
+
+The homepage returned `DevOps Challenge 1 - Team NHM`, and the health endpoint returned `{"status":"ok"}`.
