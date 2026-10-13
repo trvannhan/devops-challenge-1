@@ -1,0 +1,13 @@
+[Unit]
+Description=DevOps Challenge Web Application
+After=network.target
+
+[Service]
+User=vannhan
+WorkingDirectory=/opt/devops-app
+ExecStart=/opt/devops-app/venv/bin/python /opt/devops-app/app.py
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
