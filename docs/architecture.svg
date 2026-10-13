@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="730" viewBox="0 0 1500 730">
+<rect width="1500" height="730" fill="#fff"/>
+<g font-family="Arial, sans-serif" fill="#222">
+<text x="55" y="52" font-size="26" font-weight="bold">DevOps Challenge 1 - System Architecture</text>
+<path d="M55 75H1445 M55 420H1445" stroke="#bbb" stroke-width="1"/>
+<text x="55" y="110" font-size="19" font-weight="bold">Web request</text>
+<text x="55" y="455" font-size="19" font-weight="bold">Deployment</text>
+</g>
+<g stroke="#222" stroke-width="2" fill="white">
+<rect x="60" y="180" width="230" height="90"/>
+<rect x="425" y="180" width="260" height="90"/>
+<rect x="815" y="180" width="260" height="90"/>
+<rect x="1210" y="135" width="250" height="85"/>
+<rect x="1210" y="275" width="250" height="90"/>
+<rect x="60" y="515" width="320" height="100"/>
+<rect x="520" y="515" width="310" height="100"/>
+<rect x="990" y="515" width="410" height="100"/>
+</g>
+<g font-family="Arial,sans-serif" font-size="19" text-anchor="middle" fill="#222">
+<text x="175" y="232">Browser / Client</text>
+<text x="555" y="219">Nginx :80</text><text x="555" y="246">Reverse proxy</text>
+<text x="945" y="218">Flask application</text><text x="945" y="246">127.0.0.1:5000</text>
+<text x="1335" y="169">systemd</text><text x="1335" y="197">devops-app.service</text>
+<text x="1335" y="311">EnvironmentFile</text><text x="1335" y="341">/etc/devops-app.env</text>
+<text x="220" y="556">GitHub repository</text><text x="220" y="589" font-size="17">trvannhan/devops-challenge-1</text>
+<text x="675" y="556">Deployment directory</text><text x="675" y="586">/opt/devops-app</text>
+<text x="1195" y="553">scripts/deploy.sh</text><text x="1195" y="583" font-size="17">git pull, pip, systemctl, curl</text>
+</g>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#222"/></marker></defs>
+<g fill="none" stroke="#222" stroke-width="2.2" marker-end="url(#arrow)">
+<path d="M290 225H425"/><path d="M685 225H815"/><path d="M1210 177L1075 208"/><path d="M1335 275V220"/><path d="M380 565H520"/><path d="M990 565H830"/>
+</g>
+<g font-family="Arial,sans-serif" fill="#222" font-size="17">
+<text x="321" y="207">HTTP :80</text><text x="707" y="207">proxy_pass</text>
+<text x="1125" y="160">runs app</text><text x="1350" y="250">loads config</text>
+<text x="430" y="544">git pull</text><text x="844" y="543">updates source</text>
+<text x="870" y="299">Routes: / and /health</text>
+<text x="60" y="670" font-size="16">systemd manages Flask; deploy.sh updates code, restarts the service and checks http://localhost/health.</text>
+</g></svg>
