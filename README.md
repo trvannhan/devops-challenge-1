@@ -13,7 +13,7 @@ Bài tập thực hành triển khai một ứng dụng Flask trên **Ubuntu ch�
 
 ## 2. Kiến trúc hệ thống
 
-![Sơ đồ kiến trúc DevOps](docs/architecture.svg)
+![Sơ đồ kiến trúc DevOps](docs/architecture.png)
 
 **Luồng truy cập:** Trình duyệt → Nginx (cổng 80) → Flask (`127.0.0.1:5000`).
 
