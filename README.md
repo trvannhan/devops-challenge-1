@@ -153,3 +153,40 @@ We investigated the enabled site configurations and found that the default websi
 We also encountered an Nginx configuration syntax error. After correcting the configuration and copying it to the correct location, `nginx -t` passed successfully.
 
 Finally, we reloaded Nginx and verified that both the homepage and health endpoint worked correctly.
+## Part 5 – Environment Configuration
+
+### Objective
+
+Separate application configuration from source code using environment variables.
+
+### Environment Variables
+
+| Variable | Description | Example |
+|---|---|---|
+| APP_NAME | Application name displayed on the homepage | DevOps Challenge 1 - Team NHM |
+| APP_ENV | Application environment | production |
+| APP_PORT | Port used by Flask | 5000 |
+
+### Configuration
+
+The application uses `os.getenv()` to read environment variables.
+
+The `.env.example` file provides sample configuration values.
+
+The actual environment configuration is stored at `/etc/devops-app.env` and is loaded by systemd using:
+
+`EnvironmentFile=/etc/devops-app.env`
+
+### Verification
+
+We changed `APP_NAME` to `DevOps Challenge 1 - Environment Test` without modifying `app.py`.
+
+After restarting the service with `sudo systemctl restart devops-app`, the homepage displayed the new application name.
+
+This confirms that the application reads configuration from environment variables.
+
+### Why Separate Configuration from Source Code?
+
+Separating configuration makes the application easier to maintain and deploy across different environments.
+
+It allows configuration changes without modifying source code and helps prevent sensitive information from being committed to GitHub.
