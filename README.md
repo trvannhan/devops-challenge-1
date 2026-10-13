@@ -281,3 +281,64 @@ If the application is not ready, the script retries the request up to five times
 If the health check fails after all attempts, the script exits with a non-zero status and reports deployment failure.
 
 This prevents the script from reporting success when the application is not healthy.
+## Part 8 – Troubleshooting Challenge
+
+### Incident A – 502 Bad Gateway
+
+**Problem:** Nginx could not connect to the Flask application.
+
+**Investigation:** Checked the application service using `systemctl status devops-app` and reviewed logs using `journalctl -u devops-app`.
+
+**Solution:** Started the Flask application service using `sudo systemctl start devops-app`.
+
+**Verification:** The health endpoint returned HTTP 200 and `{"status":"ok"}`.
+
+### Incident B – Port 5000 Works but Port 80 Fails
+
+**Problem:** Flask worked on port 5000, but Nginx was stopped.
+
+**Investigation:** Tested both ports using `curl`, checked Nginx status using `systemctl`, and validated configuration using `nginx -t`.
+
+**Solution:** Started Nginx using `sudo systemctl start nginx`.
+
+**Verification:** Port 80 returned HTTP 200 and the health endpoint worked.
+
+### Incident C – Application Does Not Start After Reboot
+
+**Problem:** The application service was configured not to start automatically.
+
+**Investigation:** Checked the service using `systemctl is-enabled devops-app`.
+
+**Solution:** Enabled automatic startup using `sudo systemctl enable devops-app`.
+
+**Verification:** The service reported `enabled` and `active`.
+
+### Incident D – Old Application Version Is Displayed
+
+**Problem:** The deployed source code may be older than the latest repository version.
+
+**Investigation:** Compared Git commits in the development and deployment directories using `git log`.
+
+**Solution:** Ran the deployment script to synchronize the latest source code and restart the application.
+
+**Verification:** Both repositories had the same latest commit and the deployment passed the health check.
+
+### Incident E – Deployment Script Depends on Working Directory
+
+**Problem:** A deployment script may fail when executed outside the project directory.
+
+**Investigation:** Tested `deploy.sh` from `/tmp`.
+
+**Solution:** Used the absolute application path `/opt/devops-app` in the deployment script.
+
+**Verification:** The script completed all five deployment stages and displayed `Deployment successful.`
+
+### Useful Troubleshooting Commands
+
+- `systemctl status devops-app` – Check Flask service status.
+- `journalctl -u devops-app -n 20` – View application logs.
+- `systemctl status nginx` – Check Nginx status.
+- `sudo nginx -t` – Validate Nginx configuration.
+- `curl -i http://localhost/health` – Test the health endpoint.
+- `git log --oneline -5` – Check recent commits.
+- `git status` – Check repository changes.
