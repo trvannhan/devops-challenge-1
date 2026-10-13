@@ -25,10 +25,18 @@ sudo systemctl is-active --quiet devops-app
 
 # Step 5: Health check
 echo "[5] Health check..."
-if curl --fail http://localhost/health; then
-    echo "Application is healthy."
-    echo "Deployment successful."
-else
-    echo "Health check failed."
-    exit 1
-fi
+
+for i in 1 2 3 4 5; do
+    if curl --fail --silent http://localhost/health; then
+        echo
+        echo "Application is healthy."
+        echo "Deployment successful."
+        exit 0
+    fi
+
+    echo "Application not ready. Retrying ($i/5)..."
+    sleep 2
+done
+
+echo "Health check failed."
+exit 1
