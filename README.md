@@ -190,3 +190,52 @@ This confirms that the application reads configuration from environment variable
 Separating configuration makes the application easier to maintain and deploy across different environments.
 
 It allows configuration changes without modifying source code and helps prevent sensitive information from being committed to GitHub.
+## Part 6 – Deployment Automation
+
+### Objective
+
+Automate the deployment process using a Bash script instead of running each deployment command manually.
+
+### Deployment Script
+
+The deployment script is stored at `scripts/deploy.sh`.
+
+It automatically performs five steps:
+
+1. **Update source:** Pull the latest source code from GitHub.
+2. **Install dependencies:** Install Python packages from `requirements.txt`.
+3. **Restart application:** Restart the `devops-app` systemd service.
+4. **Check service:** Verify that the service is active.
+5. **Health check:** Check `http://localhost/health` to confirm the application is working.
+
+### Execution
+
+Run the deployment script:
+
+`./scripts/deploy.sh`
+
+### Health Check Retry
+
+The script retries the health check up to five times if the application is not ready immediately after restarting.
+
+If the health check continues to fail, the script exits with an error instead of reporting a successful deployment.
+
+### Directory Independence
+
+The deployment script uses an absolute application path (`/opt/devops-app`).
+
+We also tested the script from `/home/vannhan` using:
+
+`/home/vannhan/devops-challenge-1/scripts/deploy.sh`
+
+The deployment completed successfully.
+
+### Result
+
+The script successfully updated the source code, installed dependencies, restarted the service, verified the service status, and passed the health check.
+
+**Final output:** `Deployment successful.`
+
+### Benefits
+
+Automated deployment reduces repetitive manual work, improves consistency, and makes the deployment process easier to reproduce.
