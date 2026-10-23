@@ -14,6 +14,9 @@ def home():
 @app.route("/health")
 def health():
     return {"status": "ok"}
+@app.route("/version")
+def version():
+    return {"version": "v2", "team": "NHM"}
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=APP_PORT)
